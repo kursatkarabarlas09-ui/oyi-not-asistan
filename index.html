@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OYİ NOT ASİSTANI</title>
+    <style>
+        :root { 
+            --primary: #112D4E; 
+            --secondary: #3F72AF; 
+            --accent: #d4af37; 
+            --bg: #F9F7F7;
+            --white: #ffffff;
+            --danger: #b22222;
+            --success: #27ae60;
+            --info: #2980b9;
+        }
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0; 
+            background: var(--bg); 
+            color: #333; 
+            padding-bottom: 20px;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        /* ARKA PLAN LOGO FONU (WATERMARK) */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 80%;
+            background-image: url("logo1.png");
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+            opacity: 0.20;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* GİRİŞ EKRANI */
+        #splash {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 9999; transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+            text-align: center;
+        }
+        .logo-container {
+            width: 200px; height: 200px; margin-bottom: 25px;
+            display: flex; justify-content: center; align-items: center;
+            animation: fadeInScale 1s ease-out;
+        }
+        .logo-container img {
+            max-width: 100%; max-height: 100%; object-fit: contain;
+            filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.5));
+        }
+        .app-title { color: var(--accent); font-size: 1.8rem; letter-spacing: 3px; font-weight: 800; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .tap-hint { margin-top: 60px; color: rgba(255,255,255,0.7); font-size: 0.9rem; animation: fadeUpDown 2s infinite; letter-spacing: 1px; }
+
+        /* HEADER */
+        .header {
+            background: var(--primary); color: var(--white); padding: 15px 20px;
+            border-radius: 0 0 20px 20px; box-shadow: 0 4px 15px rgba(26, 42, 108, 0.3);
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 100; margin: 0 0 15px 0;
+        }
+        
+        /* KARTLAR VE INPUTLAR */
+        .page { display: none; padding: 15px; animation: slideIn 0.3s ease-out; }
+        .active { display: block; }
+        .card { background: var(--white); border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 4px solid var(--primary); }
+        .card-title { font-size: 0.85rem; color: var(--secondary); font-weight: 700; text-transform: uppercase; margin-bottom: 12px; display: block; letter-spacing: 0.5px; }
+        
+        input, select, textarea {
+            width: 100%; padding: 12px; border: 1px solid #e1e5ea; border-radius: 8px;
+            font-size: 1rem; background: #fdfdfd; transition: all 0.3s; color: #2c3e50; margin-bottom: 10px;
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(63, 114, 175, 0.1); background: #fff; }
+        
+        /* BUTONLAR */
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 5px; }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-accent { background: var(--accent); color: #111; }
+        .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+        .btn-reset { background: var(--danger); color: white; margin-top: 20px; opacity: 0.8; }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
+        .check-item { display: block; margin-bottom: 10px; font-size: 0.95rem; cursor: pointer; }
+        .check-item input { width: auto; margin-right: 10px; }
+
+        /* LİSTE ÖĞELERİ */
+        .list-item { 
+            background: #f8f9fa; border: 1px solid #eee; padding: 12px; border-radius: 8px; 
+            margin-bottom: 8px; display: flex; flex-direction: column; gap: 5px;
+        }
+        .list-content { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .item-actions { display: flex; gap: 10px; }
+        .edit-btn { color: var(--info); background: none; border: none; font-size: 1.1rem; cursor: pointer; }
+        .del-btn { color: var(--danger); background: none; border: none; font-weight: bold; font-size: 1.2rem; cursor: pointer; }
+
+        /* RAPOR ALANI */
+        #report-output {
+            width: 100%; height: 50vh; border: 2px solid var(--accent); background: #fff;
+            padding: 15px; font-family: 'Courier New', monospace; font-size: 0.9rem;
+            white-space: pre-wrap; overflow-y: auto; border-radius: 8px; margin-bottom: 15px;
+        }
+        
+        #save-status {
+            position: fixed; top: 15px; right: 20px; z-index: 102;
+            background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 20px;
+            font-size: 0.75rem; color: var(--success); font-weight: bold; display: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        @keyframes fadeInScale { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeUpDown { 0%, 100% { opacity: 0.5; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-5px); } }
+    </style>
+</head>
+<body>
+
+<div id="save-status">✓ Kaydedildi</div>
+
+<!-- 1. GİRİŞ EKRANI -->
+<div id="splash" onclick="enterApp()">
+    <div class="logo-container">
+        <img src="logo.png" alt="Logo" onerror="this.src='https://via.placeholder.com/180x180?text=OYI+LOGO';">
+    </div>
+    <div class="app-title">OYİ NOT ASİSTANI</div>
+    <div style="color:white; margin-top:5px; font-weight:300;">Version.2.3</div>
+    <div class="tap-hint">DEVAM ETMEK İÇİN DOKUNUN</div>
+</div>
+
+<!-- 2. DASHBOARD -->
+<div id="dashboard" class="page">
+    <div style="text-align:center; padding: 30px 0;">
+        <h2 style="color:var(--primary);">Hoş Geldiniz</h2>
+        <p style="color:#777;">Lütfen işlem seçiniz</p>
+    </div>
+    <div class="card" onclick="showPage('form-page')" style="cursor:pointer; border-left: 5px solid var(--success);">
+        <div style="display:flex; align-items:center; gap:15px;">
+            <div style="font-size:1.5rem;">📝</div>
+            <div><h3 style="margin:0; color:var(--primary);">Rapora Devam Et</h3><span style="font-size:0.8rem; color:#666;">Kaldığın yerden devam et</span></div>
+            <div style="margin-left:auto;">➔</div>
+        </div>
+    </div>
+    
+    <div class="card" onclick="resetApp()" style="cursor:pointer; border-left: 5px solid var(--danger);">
+        <div style="display:flex; align-items:center; gap:15px;">
+            <div style="font-size:1.5rem;">🗑️</div>
+            <div><h3 style="margin:0; color:var(--danger);">Yeni Rapor Başlat</h3><span style="font-size:0.8rem; color:#666;">Tüm verileri temizle</span></div>
+        </div>
+    </div>
+</div>
+
+<!-- 3. ANA FORM -->
+<div id="form-page" class="page">
+    <div class="header">
+        <div onclick="showPage('dashboard')" style="cursor:pointer;">❮ Ana Menü</div>
+        <div style="font-weight:bold;">TEKNİK İNCELEME</div>
+        <div></div>
+    </div>
+
+    <!-- A. KONU SEÇİMİ -->
+    <div class="card" style="background: #ebf5fb; border:none;">
+        <label class="card-title">OLAY TÜRÜ / KONU</label>
+        <select id="olay_turu" onchange="updateFormFields(); autoSave();"> 
+            <option value="">-- Olay Türü Seçiniz --</option>
+            <option value="Evden Hırsızlık">🏠 Evden Hırsızlık</option>
+            <option value="İşyerinden Hırsızlık">🏢 İşyerinden Hırsızlık</option>
+            <option value="Oto İnceleme">🚗 Oto İnceleme</option>
+            <option value="Motosiklet İnceleme">🏍️ Motosiklet İnceleme</option>
+            <option value="Diğer">📋 Diğer / Genel Konu</option>
+        </select>
+        <input type="text" id="manuel_konu" placeholder="Konu başlığını buraya elle yazınız..." style="display:none; border-color:var(--info); margin-top:10px; font-weight:bold;" oninput="autoSave()">
+    </div>
+
+    <!-- B. TARİH VE SAATLER -->
+    <div class="card">
+        <label class="card-title">ZAMAN BİLGİLERİ</label>
+        <label style="font-size:0.8rem; color:#666;">Olayın Bildirildiği Tarih/Saat:</label>
+        <input type="datetime-local" id="Olayın_Bildirildiği_Tarih/Saat" onchange="autoSave()">
+        
+        <label style="font-size:0.8rem; color:#666;">Olay Yerine İntikal Tarih/Saat:</label>
+        <input type="datetime-local" id="Olay_Yerine_İntikal_Tarih/Saat" onchange="autoSave()">
+
+        <label style="font-size:0.8rem; color:#666;">Olayın Gerçekleştiği Tarih:</label>
+        <input type="text" id="Olayın_Gerçekleştiği_Tarih" placeholder="Örn: 25.01.2026 günü akşam saatleri" oninput="autoSave()">
+    </div>
+
+    <!-- C. ADRES VE NO -->
+    <div class="card">
+        <label class="card-title">RESMİ BİLGİLER</label>
+        <div class="grid-2">
+            <input type="text" id="olay_no" placeholder="Rapor No" oninput="autoSave()">
+            <input type="text" id="ilk_ekip_no" placeholder="İlk Ekip Kodu" oninput="autoSave()">
+        </div>
+        <textarea id="adres" rows="2" placeholder="Olayın Meydana Geldiği Adres Bilgisi..." oninput="autoSave()"></textarea>
+    </div>
+
+    <!-- D. DİNAMİK ALANLAR - BİNA -->
+    <div id="dynamic-bina" class="card" style="display:none;">
+        <label class="card-title">GİRİŞ KAPISI VE KİLİT</label>
+        <select id="kapi_durumu" onchange="autoSave()">
+            <option value="Kapı Sağlam">Kapı Sağlam</option>
+            <option value="Kapı Zorlanmış (Kanırtılmış)">Kapı Zorlanmış (Kanırtılmış)</option>
+            <option value="Kapı Kırık / Zarar Görmüş">Kapı Kırık / Zarar Görmüş</option>
+            <option value="Kapı Açık / Kilitli Değil">Kapı Açık / Kilitli Değil</option>
+            <option value="Kapı Yüzeyinde Mukayeseye Elverişsiz İz Mevcut">Kapı Yüzeyinde Mukayeseye Elverişsiz İz Mevcut</option>
+        </select>
+        <select id="kilit_durumu" onchange="autoSave()">
+            <option value="Kilit Sağlam">Kilit Sağlam</option>
+            <option value="Kilit Göbeği Kırık">Kilit Göbeği Kırık</option>
+            <option value="Kilit Dili Düşürülmüş">Kilit Dili Düşürülmüş</option>
+            <option value="Kilit Zorlanmış">Kilit Zorlanmış</option>
+            <option value="Kilit Yüzeyinde Mukayeseye Elverişsiz İz Mevcut">Kilit Yüzeyinde Mukayeseye Elverişsiz İz Mevcut</option>
+        </select>
+    </div>
+
+    <!-- D. DİNAMİK ALANLAR - OTO -->
+    <div id="dynamic-oto" style="display:none;">
+        <div class="card">
+            <label class="card-title">ARAÇ KÜNYESİ</label>
+            <div class="grid-2">
+                <input type="text" id="plaka" placeholder="Plaka" oninput="autoSave()">
+                <input type="text" id="sase_no" placeholder="Şase No" oninput="autoSave()">
+            </div>
+            <div class="grid-2">
+                <input type="text" id="marka" placeholder="Marka/Model" oninput="autoSave()">
+                <input type="text" id="renk" placeholder="Renk" oninput="autoSave()">
+            </div>
+        </div>
+
+        <div class="card">
+            <label class="card-title">DIŞ HASAR VE GİRİŞ YÖNTEMİ</label>
+            <label class="check-item"><input type="checkbox" class="oto-hasar" value="Sol ön cam kırık" onchange="autoSave()"> Sol ön cam kırık</label>
+            <label class="check-item"><input type="checkbox" class="oto-hasar" value="Sağ ön cam kırık" onchange="autoSave()"> Sağ ön cam kırık</label>
+            <label class="check-item"><input type="checkbox" class="oto-hasar" value="Kelebek camı patlatılmış" onchange="autoSave()"> Kelebek camı patlatılmış</label>
+            <label class="check-item"><input type="checkbox" class="oto-hasar" value="Kapı kilidi zorlanmış" onchange="autoSave()"> Kapı kilidi zorlanmış</label>
+            <input type="text" id="oto_dis_diger" placeholder="Diğer dış hasar..." oninput="autoSave()">
+        </div>
+
+        <div class="card">
+            <label class="card-title">ARAÇ İÇİ DURUM</label>
+            <label class="check-item"><input type="checkbox" class="oto-ic" value="Oto teyp/ekran sökülmüş" onchange="autoSave()"> Oto teyp/ekran sökülmüş</label>
+            <label class="check-item"><input type="checkbox" class="oto-ic" value="Torpido gözü karıştırılmış" onchange="autoSave()"> Torpido gözü karıştırılmış</label>
+            <label class="check-item"><input type="checkbox" class="oto-ic" value="Bagaj karıştırılmış" onchange="autoSave()"> Bagaj karıştırılmış</label>
+            <input type="text" id="oto_ic_diger" placeholder="Diğer araç içi durum..." oninput="autoSave()">
+        </div>
+
+        <div class="card">
+            <label class="card-title">KONTAK DURUMU</label>
+            <label class="check-item"><input type="radio" name="kontak_radio" value="sağlam ve orijinal" checked onchange="autoSave()"> Sağlam</label>
+            <label class="check-item"><input type="radio" name="kontak_radio" value="anahtar üzerinde bırakılmış" onchange="autoSave()"> Anahtar üzerinde</label>
+            <label class="check-item"><input type="radio" name="kontak_radio" value="yuvası kırılmış/zorlanmış" onchange="autoSave()"> Kontak yuvası kırık</label>
+            <label class="check-item"><input type="radio" name="kontak_radio" value="düz kontak yapılmış" onchange="autoSave()"> Düz kontak</label>
+        </div>
+
+        <div class="card">
+            <label class="card-title">TEKNİK KONTROL</label>
+            <label class="check-item"><input type="checkbox" id="akü_durum" value="Akü yerinde" onchange="autoSave()"> Akü Yerinde / Sağlam</label>
+            <label class="check-item"><input type="checkbox" id="sase_okunur" value="Şase no okunuyor" onchange="autoSave()"> Şase No Okunabilir Durumda</label>
+        </div>
+    </div>
+
+    <!-- D. DİNAMİK ALANLAR - MOTOSİKLET -->
+    <div id="dynamic-Moto" style="display:none;">
+        <div class="card">
+            <label class="card-title">MOTOSİKLET KÜNYESİ</label>
+            <div class="grid-2">
+                <input type="text" id="mot_plaka" placeholder="Plaka" oninput="autoSave()">
+                <input type="text" id="mot_sase" placeholder="Şase No" oninput="autoSave()">
+            </div>
+            <div class="grid-2">
+                <input type="text" id="mot_marka" placeholder="Marka / Model" oninput="autoSave()">
+                <input type="text" id="mot_renk" placeholder="Renk" oninput="autoSave()">
+            </div>
+        </div>
+
+        <div class="card">
+            <label class="card-title">KONTAK DURUMU</label>
+            <div class="check-group">
+                <label class="check-item"><input type="radio" name="mot_kontak" value="sağlam ve orijinal" checked onchange="toggleMotKontakOther(); autoSave();"> Sağlam / Orijinal</label>
+                <label class="check-item"><input type="radio" name="mot_kontak" value="yuvasından sökülmüş/kırılmış" onchange="toggleMotKontakOther(); autoSave();"> Kontak Yuvası Sökülmüş</label>
+                <label class="check-item"><input type="radio" name="mot_kontak" value="düz kontak yapılmış" onchange="toggleMotKontakOther(); autoSave();"> Düz Kontak Yapılmış</label>
+                <label class="check-item"><input type="radio" name="mot_kontak" value="diğer" id="mot_kontak_diger_check" onchange="toggleMotKontakOther(); autoSave();"> Diğer</label>
+            </div>
+            <input type="text" id="mot_kontak_diger_text" placeholder="Kontak durumunu belirtin..." style="display:none; margin-top:10px;" oninput="autoSave()">
+        </div>
+
+        <div class="card">
+            <label class="card-title">KAPORTA VE DIŞ AKSAM</label>
+            <textarea id="mot_kaporta" rows="2" placeholder="Kaporta hasarı, kırık parça, eksik aksesuar vb. durumları yazın..." oninput="autoSave()"></textarea>
+        </div>
+
+        <div class="card">
+            <label class="card-title">TEKNİK NOTLAR</label>
+            <textarea id="mot_teknik_not" rows="2" placeholder="Zincir durumu, kilit kesilmesi, branda durumu vb. ek açıklamalar..." oninput="autoSave()"></textarea>
+        </div>
+    </div>
+
+    <!-- E. ANLATIMLAR -->
+    <div class="card">
+        <label class="card-title">OLAYIN ÖZETİ VE NOTLAR</label>
+        <textarea id="olay_ozeti" rows="2" placeholder="Olayın kısa özeti (Makama Arz İçin)" oninput="autoSave()"></textarea>
+        <textarea id="genel_notlar" rows="4" placeholder="Teknik detaylı notlar..." oninput="autoSave()"></textarea>
+    </div>
+
+    <!-- F. ŞAHISLAR -->
+    <div class="card">
+        <label class="card-title">İLGİLİ ŞAHISLAR</label>
+        <select id="sahis_tipi" onchange="toggleSahisCustom()">
+            <option value="Müşteki">Müşteki</option>
+            <option value="Mağdur">Mağdur</option>
+            <option value="Şüpheli">Şüpheli</option>
+            <option value="Ölen Şahıs">Ölen Şahıs</option>
+            <option value="Tanık">Tanık</option>
+            <option value="DİĞER">DİĞER (Sıfat Yaz)</option>
+        </select>
+        <input type="text" id="sahis_custom" placeholder="Örn: Bina Sorumlusu" style="display:none; border-color:var(--info);">
+        <div class="grid-2">
+            <input type="text" id="sahis_ad" placeholder="Ad Soyad">
+            <input type="number" id="sahis_tc" placeholder="TC No">
+        </div>
+        <button class="btn btn-outline" id="sahis-add-btn" onclick="addSahis()">+ Şahıs Ekle</button>
+        <div id="sahis_listesi" style="margin-top:10px;"></div>
+    </div>
+
+    <!-- G. BULGULAR -->
+    <div class="card" style="border-left: 4px solid var(--accent);">
+        <label class="card-title" style="color:var(--accent);">TESPİT EDİLEN BULGULAR</label>
+        <select id="bulgu_turu" onchange="toggleBulguCustom()">
+            <option value="">Bulgu Türü Seç...</option>
+            <option value="Vücut İzi (Parmak İzi)">Vücut İzi (Parmak İzi)</option>
+            <option value="Biyolojik Svap">Biyolojik Svap</option>
+            <option value="Kovan">Kovan</option>
+            <option value="Fişek">Fişek</option>
+            <option value="Çekirdek">Çekirdek</option>
+            <option value="Nüve">Nüve</option>
+            <option value="Silah">Silah</option>
+            <option value="Kesici Alet">Kesici Alet</option>
+            <option value="Sigara İzmariti">Sigara İzmariti</option>
+            <option value="Ayakkabı İzi">Ayakkabı İzi</option>
+            <option value="DİĞER">DİĞER (Elle Gir)</option>
+        </select>
+        <input type="text" id="bulgu_custom" placeholder="Bulgu İsmini Yazın" style="display:none; border-color:var(--accent);">
+        <input type="text" id="bulgu_yeri" placeholder="Bulunduğu Yer">
+        
+        <button class="btn btn-accent" id="bulgu-add-btn" onclick="addBulgu()">+ BULGUYU EKLE</button>
+        <div id="bulgu_listesi" style="margin-top:10px;"></div>
+    </div>
+
+    <button class="btn btn-success" onclick="createReport()">📄 RAPORU HAZIRLA</button>
+    <br><br>
+</div>
+
+<!-- 4. RAPOR SONUÇ -->
+<div id="report-page" class="page">
+    <div class="header">
+        <div onclick="showPage('form-page')" style="cursor:pointer;">❮ Düzenle</div>
+        <div style="font-weight:bold;">RAPOR ÇIKTISI</div>
+        <div></div>
+    </div>
+    <div class="card">
+        <textarea id="report-output" readonly></textarea>
+        <div class="grid-2">
+            <button class="btn btn-primary" onclick="copyReport()">Kopyala</button>
+            <button class="btn btn-success" onclick="downloadTxt()">.TXT Kaydet</button>
+        </div>
+        <button class="btn btn-outline" style="margin-top:10px;" onclick="shareReport()">Paylaş</button>
+    </div>
+</div>
+
+<script>
+    let sahislar = [];
+    let bulgular = [];
+    let editingSahisIndex = -1;
+    let editingBulguIndex = -1;
+
+    // --- OTOMATİK KAYIT SİSTEMİ ---
+    
+    // 1. Sayfa Açıldığında Verileri Geri Yükle
+    window.addEventListener('load', () => {
+        setupAutoSaveListeners(); // Tüm kutucuklara takipçi tak
+        
+        const saved = localStorage.getItem('oyi_kayit');
+        if (saved) {
+            const p = JSON.parse(saved);
+            
+            // Temel Veriler
+            if(p.olay_no) document.getElementById('olay_no').value = p.olay_no;
+            if(p.olay_turu) document.getElementById('olay_turu').value = p.olay_turu;
+            if(p.adres) document.getElementById('adres').value = p.adres;
+            if(p.manuel_konu) document.getElementById('manuel_konu').value = p.manuel_konu;
+            if(p.ozet) document.getElementById('olay_ozeti').value = p.ozet;
+            if(p.notlar) document.getElementById('genel_notlar').value = p.notlar;
+            if(p.ilk_ekip_no) document.getElementById('ilk_ekip_no').value = p.ilk_ekip_no;
+            
+            if(p.bildirim_t) document.getElementById('Olayın_Bildirildiği_Tarih/Saat').value = p.bildirim_t;
+            if(p.intikal_t) document.getElementById('Olay_Yerine_İntikal_Tarih/Saat').value = p.intikal_t;
+            if(p.olay_t) document.getElementById('Olayın_Gerçekleştiği_Tarih').value = p.olay_t;
+
+            // Oto Verileri
+            if(p.plaka) document.getElementById('plaka').value = p.plaka;
+            if(p.marka) document.getElementById('marka').value = p.marka;
+            if(p.sase_no) document.getElementById('sase_no').value = p.sase_no;
+            if(p.renk) document.getElementById('renk').value = p.renk;
+            if(p.oto_dis_diger) document.getElementById('oto_dis_diger').value = p.oto_dis_diger;
+            if(p.oto_ic_diger) document.getElementById('oto_ic_diger').value = p.oto_ic_diger;
+
+            // Moto Verileri
+            if(p.mot_plaka) document.getElementById('mot_plaka').value = p.mot_plaka;
+            if(p.mot_marka) document.getElementById('mot_marka').value = p.mot_marka;
+            if(p.mot_sase) document.getElementById('mot_sase').value = p.mot_sase;
+            if(p.mot_renk) document.getElementById('mot_renk').value = p.mot_renk;
+            if(p.mot_kaporta) document.getElementById('mot_kaporta').value = p.mot_kaporta;
+            if(p.mot_teknik_not) document.getElementById('mot_teknik_not').value = p.mot_teknik_not;
+
+            // Listeleri Yükle
+            sahislar = p.sahislar || [];
+            bulgular = p.bulgular || [];
+            
+            renderLists();
+            updateFormFields();
+        }
+    });
+
+    // 2. Tüm giriş alanlarını otomatik takip eden fonksiyon
+    function setupAutoSaveListeners() {
+        const inputs = document.querySelectorAll('input, select, textarea');
+        inputs.forEach(el => {
+            el.addEventListener('input', autoSave);
+            el.addEventListener('change', autoSave);
+        });
+    }
+
+    // 3. Verileri Kaydetme Fonksiyonu
+    function autoSave() {
+        const dataToSave = {
+            olay_no: document.getElementById('olay_no').value,
+            olay_turu: document.getElementById('olay_turu').value,
+            adres: document.getElementById('adres').value,
+            manuel_konu: document.getElementById('manuel_konu').value,
+            ozet: document.getElementById('olay_ozeti').value,
+            notlar: document.getElementById('genel_notlar').value,
+            ilk_ekip_no: document.getElementById('ilk_ekip_no').value,
+            
+            bildirim_t: document.getElementById('Olayın_Bildirildiği_Tarih/Saat').value,
+            intikal_t: document.getElementById('Olay_Yerine_İntikal_Tarih/Saat').value,
+            olay_t: document.getElementById('Olayın_Gerçekleştiği_Tarih').value,
+
+            plaka: document.getElementById('plaka').value,
+            marka: document.getElementById('marka').value,
+            sase_no: document.getElementById('sase_no').value,
+            renk: document.getElementById('renk').value,
+            oto_dis_diger: document.getElementById('oto_dis_diger').value,
+            oto_ic_diger: document.getElementById('oto_ic_diger').value,
+
+            mot_plaka: document.getElementById('mot_plaka').value,
+            mot_marka: document.getElementById('mot_marka').value,
+            mot_sase: document.getElementById('mot_sase').value,
+            mot_renk: document.getElementById('mot_renk').value,
+            mot_kaporta: document.getElementById('mot_kaporta').value,
+            mot_teknik_not: document.getElementById('mot_teknik_not').value,
+            
+            sahislar: sahislar,
+            bulgular: bulgular
+        };
+        
+        localStorage.setItem('oyi_kayit', JSON.stringify(dataToSave));
+        
+        // Görsel Bildirim
+        const status = document.getElementById('save-status');
+        status.style.display = 'block';
+        setTimeout(() => { status.style.display = 'none'; }, 2000);
+    }
+
+    function resetApp() {
+        if(confirm("Tüm veriler silinecek ve yeni rapor başlatılacak. Emin misiniz?")) {
+            localStorage.removeItem('oyi_kayit');
+            location.reload();
+        }
+    }
+
+    // --- MEVCUT FONKSİYONLAR ---
+
+    function enterApp() {
+        document.getElementById('splash').style.transform = 'translateY(-100%)';
+        setTimeout(() => { 
+            document.getElementById('splash').style.display = 'none'; 
+            showPage('dashboard'); 
+        }, 500);
+    }
+
+    function showPage(id) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        window.scrollTo(0,0);
+    }
+
+    function updateFormFields() {
+        const tur = document.getElementById('olay_turu').value;
+        document.getElementById('dynamic-bina').style.display = (tur.includes('Evden') || tur.includes('İşyeri')) ? 'block' : 'none';
+        document.getElementById('dynamic-oto').style.display = (tur.includes('Oto')) ? 'block' : 'none';
+        document.getElementById('dynamic-Moto').style.display = (tur.includes('Motosiklet')) ? 'block' : 'none';
+
+        const manuelKonuInput = document.getElementById('manuel_konu');
+        if(tur.includes('Diğer')) {
+            manuelKonuInput.style.display = 'block';
+        } else {
+            manuelKonuInput.style.display = 'none';
+            manuelKonuInput.value = '';
+        }
+    }
+
+    function toggleBulguCustom() {
+        const sel = document.getElementById('bulgu_turu').value;
+        document.getElementById('bulgu_custom').style.display = (sel === 'DİĞER') ? 'block' : 'none';
+    }
+
+    function toggleSahisCustom() {
+        const sel = document.getElementById('sahis_tipi').value;
+        document.getElementById('sahis_custom').style.display = (sel === 'DİĞER') ? 'block' : 'none';
+    }
+
+    function addSahis() {
+        let tip = document.getElementById('sahis_tipi').value;
+        if(tip === 'DİĞER') tip = document.getElementById('sahis_custom').value || "Diğer";
+        const ad = document.getElementById('sahis_ad').value;
+        const tc = document.getElementById('sahis_tc').value;
+        if(!ad) return;
+        if(editingSahisIndex > -1) {
+            sahislar[editingSahisIndex] = {tip, ad, tc};
+            editingSahisIndex = -1;
+            document.getElementById('sahis-add-btn').innerText = "+ Şahıs Ekle";
+        } else {
+            sahislar.push({tip, ad, tc});
+        }
+        renderLists();
+        resetSahisForm();
+        autoSave(); // Ekleme sonrası kaydet
+    }
+
+    function resetSahisForm() {
+        document.getElementById('sahis_ad').value = '';
+        document.getElementById('sahis_tc').value = '';
+        document.getElementById('sahis_tipi').value = 'Müşteki';
+        document.getElementById('sahis_custom').value = '';
+        document.getElementById('sahis_custom').style.display = 'none';
+    }
+
+    function editSahis(index) {
+        const s = sahislar[index];
+        editingSahisIndex = index;
+        const standardTypes = ["Müşteki", "Mağdur", "Şüpheli", "Ölen Şahıs", "Tanık"];
+        if(standardTypes.includes(s.tip)) {
+            document.getElementById('sahis_tipi').value = s.tip;
+            document.getElementById('sahis_custom').style.display = 'none';
+        } else {
+            document.getElementById('sahis_tipi').value = 'DİĞER';
+            document.getElementById('sahis_custom').value = s.tip;
+            document.getElementById('sahis_custom').style.display = 'block';
+        }
+        document.getElementById('sahis_ad').value = s.ad;
+        document.getElementById('sahis_tc').value = s.tc;
+        document.getElementById('sahis-add-btn').innerText = "✓ Şahsı Güncelle";
+    }
+
+    function addBulgu() {
+        let tur = document.getElementById('bulgu_turu').value;
+        if(tur === 'DİĞER') tur = document.getElementById('bulgu_custom').value || "Diğer";
+        const yer = document.getElementById('bulgu_yeri').value;
+        if(!tur || !yer) return;
+        if(editingBulguIndex > -1) {
+            bulgular[editingBulguIndex] = {tur, yer};
+            editingBulguIndex = -1;
+            document.getElementById('bulgu-add-btn').innerText = "+ BULGUYU EKLE";
+        } else {
+            bulgular.push({tur, yer});
+        }
+        renderLists();
+        resetBulguForm();
+        autoSave(); // Ekleme sonrası kaydet
+    }
+
+    function resetBulguForm() {
+        document.getElementById('bulgu_yeri').value = '';
+        document.getElementById('bulgu_turu').value = '';
+        document.getElementById('bulgu_custom').value = '';
+        document.getElementById('bulgu_custom').style.display = 'none';
+    }
+
+    function editBulgu(index) {
+        const b = bulgular[index];
+        editingBulguIndex = index;
+        const standardTypes = ["Vücut İzi (Parmak İzi)", "Biyolojik Svap", "Kovan", "Fişek", "Çekirdek", "Nüve", "Silah", "Kesici Alet", "Sigara İzmariti", "Ayakkabı İzi"];
+        if(standardTypes.includes(b.tur)) {
+            document.getElementById('bulgu_turu').value = b.tur;
+            document.getElementById('bulgu_custom').style.display = 'none';
+        } else {
+            document.getElementById('bulgu_turu').value = 'DİĞER';
+            document.getElementById('bulgu_custom').value = b.tur;
+            document.getElementById('bulgu_custom').style.display = 'block';
+        }
+        document.getElementById('bulgu_yeri').value = b.yer;
+        document.getElementById('bulgu-add-btn').innerText = "✓ Bulguyu Güncelle";
+    }
+
+    function renderLists() {
+        document.getElementById('sahis_listesi').innerHTML = sahislar.map((s,i) => `
+            <div class="list-item">
+                <div class="list-content">
+                    <span><strong>${s.tip}:</strong> ${s.ad}</span>
+                    <div class="item-actions">
+                        <button class="edit-btn" onclick="editSahis(${i})">✎</button>
+                        <button class="del-btn" onclick="sahislar.splice(${i},1);renderLists();autoSave();">×</button>
+                    </div>
+                </div>
+            </div>`).join('');
+        document.getElementById('bulgu_listesi').innerHTML = bulgular.map((b,i) => `
+            <div class="list-item">
+                <div class="list-content">
+                    <span>${i+1}. ${b.tur} (${b.yer})</span>
+                    <div class="item-actions">
+                        <button class="edit-btn" onclick="editBulgu(${i})">✎</button>
+                        <button class="del-btn" onclick="bulgular.splice(${i},1);renderLists();autoSave();">×</button>
+                    </div>
+                </div>
+            </div>`).join('');
+    }
+
+    function formatD(val) {
+        if (!val) return "....."; 
+        const d = new Date(val);
+        if (isNaN(d.getTime())) return ".....";
+
+        const gun = String(d.getDate()).padStart(2, '0');
+        const ay = String(d.getMonth() + 1).padStart(2, '0');
+        const yil = d.getFullYear();
+        const saat = String(d.getHours()).padStart(2, '0');
+        const dakika = String(d.getMinutes()).padStart(2, '0');
+
+        return `${gun}.${ay}.${yil} günü saat ${saat}.${dakika}`;
+    }
+
+    function createReport() {
+        let seciliTur = document.getElementById('olay_turu').value;
+        if(seciliTur.includes("Diğer")) seciliTur = document.getElementById('manuel_konu').value || "GENEL KONU";
+        const no = document.getElementById('olay_no').value || ".....";
+        const ozet = document.getElementById('olay_ozeti').value || ".....";
+        const adres = document.getElementById('adres').value || ".....";
+        const b_t = formatD(document.getElementById('Olayın_Bildirildiği_Tarih/Saat').value);
+        const i_t = formatD(document.getElementById('Olay_Yerine_İntikal_Tarih/Saat').value);
+        const o_t = document.getElementById('Olayın_Gerçekleştiği_Tarih').value || ".....";
+
+        let teknik = "";
+        
+        // BİNA TEKNİK
+        if(document.getElementById('dynamic-bina').style.display === 'block') {
+            const k = document.getElementById('kapi_durumu').value;
+            const l = document.getElementById('kilit_durumu').value;
+            teknik = `${k} ve ${l} olduğu görülmüştür.`;
+        }
+        
+        // OTO TEKNİK
+        if(document.getElementById('dynamic-oto').style.display === 'block') {
+            const p = document.getElementById('plaka').value || ".....";
+            const m = document.getElementById('marka').value || ".....";
+            const s = document.getElementById('sase_no').value || ".....";
+            const r = document.getElementById('renk').value || ".....";
+            
+            let hasarlar = [];
+            document.querySelectorAll('.oto-hasar:checked').forEach(c => hasarlar.push(c.value));
+            if(document.getElementById('oto_dis_diger').value) hasarlar.push(document.getElementById('oto_dis_diger').value);
+
+            let icler = [];
+            document.querySelectorAll('.oto-ic:checked').forEach(c => icler.push(c.value));
+            if(document.getElementById('oto_ic_diger').value) icler.push(document.getElementById('oto_ic_diger').value);
+
+            const kontakEleman = document.querySelector('input[name="kontak_radio"]:checked');
+            const kontak = kontakEleman ? kontakEleman.value : "belirtilmemiş";
+            const aku = document.getElementById('akü_durum').checked ? "Akü yerindedir." : "Akü eksiktir/yerinde değildir.";
+
+            teknik = `ARAÇ KÜNYESİ: ${p} plakalı, ${m} marka, ${r} renkli, ${s} şase nolu araç.\n\n`;
+            teknik += `DIŞ İNCELEME: ${hasarlar.length > 0 ? hasarlar.join(", ") + " olduğu tespit edilmiştir." : "Görünür herhangi bir dış hasar saptanmamıştır."}\n\n`;
+            teknik += `İÇ İNCELEME: ${icler.length > 0 ? icler.join(", ") + " olduğu saptanmıştır." : "Araç içerisinde karıştırma veya zarar verme izine rastlanılmamıştır."}\n\n`;
+            teknik += `KONTAK: Kontak sisteminin ${kontak} olduğu görülmüştür.\n\n`;
+            teknik += `TEKNİK: ${aku}\n\n`;
+        }
+
+        // MOTOSİKLET TEKNİK
+        if(document.getElementById('dynamic-Moto').style.display === 'block') {
+            const p = document.getElementById('mot_plaka').value || ".....";
+            const m = document.getElementById('mot_marka').value || ".....";
+            const s = document.getElementById('mot_sase').value || ".....";
+            const r = document.getElementById('mot_renk').value || ".....";
+            
+            const kontakEleman = document.querySelector('input[name="mot_kontak"]:checked');
+            let kontak = kontakEleman ? kontakEleman.value : "belirtilmemiş";
+            if(kontak === "diğer") {
+                kontak = document.getElementById('mot_kontak_diger_text').value || "belirtilmemiş";
+            }
+            const kaporta = document.getElementById('mot_kaporta').value || "Herhangi bir kaporta hasarı saptanmamıştır.";
+            const ekNot = document.getElementById('mot_teknik_not').value || "Ek teknik bulguya rastlanılmamıştır.";
+
+            teknik += `MOTOSİKLET KÜNYESİ: ${p} plakalı, ${m} marka, ${r} renkli, ${s} şase nolu motosiklet.\n\n`;
+            teknik += `KONTAK DURUMU: ${kontak}.\n\n`;
+            teknik += `KAPORTA/GÖVDE: ${kaporta}\n\n`;
+            teknik += `DİĞER NOTLAR: ${ekNot}\n\n`;
+        }
+
+        // Genel notları teknik kısma ekle
+        const genelNot = document.getElementById('genel_notlar').value;
+        if(genelNot) teknik += "\nNOTLAR: " + genelNot;
+
+        let b_count = "";
+        if(bulgular.length > 0) {
+            let s = {}; bulgular.forEach(x => s[x.tur] = (s[x.tur]||0)+1);
+            let p = []; for(let k in s) p.push(`(${s[k]}) adet ${k}`);
+            b_count = `Yapılan teknik incelemede; ${p.join(", ")} tespit edilmiştir.`;
+        } else { b_count = "Herhangi bir iz veya bulguya rastlanılmamıştır."; }
+
+        let s_m = ""; sahislar.forEach(x => s_m += `*${x.tip}:* ${x.ad} ${x.tc?'(TC:'+x.tc+')':''}\n`);
+
+        let r = `*MAKAMA ARZ*\n\n*Rapor No:* ${no}\n*Konu:* ${seciliTur}\n*Olayın Gerçekleştiği Tarihi:* ${o_t}\n*Olay Adresi:* ${adres}\n*Olayın Bildirildiği Tarih/Saat:* ${b_t}\n*Olay Yerine İntikal Tarih/saat:* ${i_t}\n\n*Olay Özeti:* ${ozet}\n\n${b_count}\n\n${s_m}\n*Arz ederim.*\n\n--------------------\nTEKNİK DETAYLAR\n--------------------\n${teknik}\n\nBULGULAR:\n`;
+        bulgular.forEach((x,i) => r += `${i+1}. ${x.tur} (${x.yer})\n`);
+
+        document.getElementById('report-output').value = r;
+        showPage('report-page');
+    }
+
+    function copyReport() { 
+        const output = document.getElementById("report-output");
+        output.select();
+        output.setSelectionRange(0, 99999);
+        document.execCommand("copy"); 
+        
+        const btn = document.querySelector('.btn-primary');
+        btn.innerText = "KOPYALANDI!";
+        setTimeout(() => btn.innerText = "Kopyala", 2000);
+    }
+
+    function downloadTxt() {
+        const content = document.getElementById('report-output').value;
+        const blob = new Blob([content], {type:'text/plain'});
+        const a = document.createElement('a'); 
+        a.href = URL.createObjectURL(blob);
+        a.download = `Rapor_${document.getElementById('olay_no').value || 'Olay'}.txt`; 
+        a.click();
+    }
+
+    function shareReport() { 
+        const content = document.getElementById('report-output').value;
+        if(navigator.share) {
+            navigator.share({ 
+                title: 'OYİ Raporu', 
+                text: content 
+            }).catch(console.error);
+        } else {
+            copyReport();
+            alert("Paylaşım özelliği tarayıcınızda desteklenmiyor. Rapor kopyalandı.");
+        }
+    }
+
+    function toggleMotKontakOther() {
+        const isOther = document.getElementById('mot_kontak_diger_check').checked;
+        document.getElementById('mot_kontak_diger_text').style.display = isOther ? 'block' : 'none';
+    }
+</script>
+</body>
+</html>

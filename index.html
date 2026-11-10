@@ -138,7 +138,7 @@
         <img src="logo.png" alt="Logo" onerror="this.src='https://via.placeholder.com/180x180?text=OYI+LOGO';">
     </div>
     <div class="app-title">OYİ NOT ASİSTANI</div>
-    <div style="color:white; margin-top:5px; font-weight:300;">Version.2.3</div>
+    <div style="color:white; margin-top:5px; font-weight:300;">Version.2.4</div>
     <div class="tap-hint">DEVAM ETMEK İÇİN DOKUNUN</div>
 </div>
 
@@ -186,7 +186,7 @@
         <input type="text" id="manuel_konu" placeholder="Konu başlığını buraya elle yazınız..." style="display:none; border-color:var(--info); margin-top:10px; font-weight:bold;" oninput="autoSave()">
     </div>
 
-    <!-- B. TARİH VE SAATLER -->
+    <!-- B. TARİH VE SAATLER (SİHİRLİ SAAT DOKUNUŞU) -->
     <div class="card">
         <label class="card-title">ZAMAN BİLGİLERİ</label>
         <label style="font-size:0.8rem; color:#666;">Olayın Bildirildiği Tarih/Saat:</label>
@@ -195,8 +195,18 @@
         <label style="font-size:0.8rem; color:#666;">Olay Yerine İntikal Tarih/Saat:</label>
         <input type="datetime-local" id="Olay_Yerine_İntikal_Tarih/Saat" onchange="autoSave()">
 
-        <label style="font-size:0.8rem; color:#666;">Olayın Gerçekleştiği Tarih:</label>
-        <input type="text" id="Olayın_Gerçekleştiği_Tarih" placeholder="Örn: 25.01.2026 günü akşam saatleri" oninput="autoSave()">
+        <label style="font-size:0.85rem; color:var(--primary); font-weight:bold; margin-top:5px; display:block;">✨ Sihirli Olay Tarihi / Saat Aralığı:</label>
+        <div class="grid-2">
+            <div>
+                <label style="font-size:0.75rem; color:#666;">Başlangıç / Tek Tarih:</label>
+                <input type="datetime-local" id="olay_baslangic_tarih" onchange="autoSave()">
+            </div>
+            <div>
+                <label style="font-size:0.75rem; color:#666;">Bitiş Tarihi (Opsiyonel):</label>
+                <input type="datetime-local" id="olay_bitis_tarih" onchange="autoSave()">
+            </div>
+        </div>
+        <input type="text" id="Olayın_Gerçekleştiği_Tarih" placeholder="Veya elle yazın: Örn: 25.01.2026 günü akşam saatleri" oninput="autoSave()">
     </div>
 
     <!-- C. ADRES VE NO -->
@@ -409,6 +419,8 @@
             
             if(p.bildirim_t) document.getElementById('Olayın_Bildirildiği_Tarih/Saat').value = p.bildirim_t;
             if(p.intikal_t) document.getElementById('Olay_Yerine_İntikal_Tarih/Saat').value = p.intikal_t;
+            if(p.olay_baslangic) document.getElementById('olay_baslangic_tarih').value = p.olay_baslangic;
+            if(p.olay_bitis) document.getElementById('olay_bitis_tarih').value = p.olay_bitis;
             if(p.olay_t) document.getElementById('Olayın_Gerçekleştiği_Tarih').value = p.olay_t;
 
             // Oto Verileri
@@ -458,6 +470,8 @@
             
             bildirim_t: document.getElementById('Olayın_Bildirildiği_Tarih/Saat').value,
             intikal_t: document.getElementById('Olay_Yerine_İntikal_Tarih/Saat').value,
+            olay_baslangic: document.getElementById('olay_baslangic_tarih').value,
+            olay_bitis: document.getElementById('olay_bitis_tarih').value,
             olay_t: document.getElementById('Olayın_Gerçekleştiği_Tarih').value,
 
             plaka: document.getElementById('plaka').value,
@@ -549,7 +563,7 @@
         }
         renderLists();
         resetSahisForm();
-        autoSave(); // Ekleme sonrası kaydet
+        autoSave();
     }
 
     function resetSahisForm() {
@@ -591,7 +605,7 @@
         }
         renderLists();
         resetBulguForm();
-        autoSave(); // Ekleme sonrası kaydet
+        autoSave();
     }
 
     function resetBulguForm() {
@@ -654,6 +668,46 @@
         return `${gun}.${ay}.${yil} günü saat ${saat}.${dakika}`;
     }
 
+    // ✨ SİHİRLİ SAAT DÖNÜŞTÜRÜCÜSÜ
+    function formatSihirliTarih() {
+        const bas = document.getElementById('olay_baslangic_tarih').value;
+        const bit = document.getElementById('olay_bitis_tarih').value;
+        const manuel = document.getElementById('Olayın_Gerçekleştiği_Tarih').value;
+
+        if (bas && bit) {
+            const d1 = new Date(bas);
+            const d2 = new Date(bit);
+            if (!isNaN(d1.getTime()) && !isNaN(d2.getTime())) {
+                const g1 = String(d1.getDate()).padStart(2, '0');
+                const a1 = String(d1.getMonth() + 1).padStart(2, '0');
+                const y1 = d1.getFullYear();
+                const s1 = String(d1.getHours()).padStart(2, '0');
+                const dk1 = String(d1.getMinutes()).padStart(2, '0');
+
+                const g2 = String(d2.getDate()).padStart(2, '0');
+                const a2 = String(d2.getMonth() + 1).padStart(2, '0');
+                const y2 = d2.getFullYear();
+                const s2 = String(d2.getHours()).padStart(2, '0');
+                const dk2 = String(d2.getMinutes()).padStart(2, '0');
+
+                return `${g1}.${a1}.${y1} günü saat ${s1}:${dk1} ile ${g2}.${a2}.${y2} günü saat ${s2}:${dk2} arasında`;
+            }
+        } else if (bas) {
+            const d1 = new Date(bas);
+            if (!isNaN(d1.getTime())) {
+                const g1 = String(d1.getDate()).padStart(2, '0');
+                const a1 = String(d1.getMonth() + 1).padStart(2, '0');
+                const y1 = d1.getFullYear();
+                const s1 = String(d1.getHours()).padStart(2, '0');
+                const dk1 = String(d1.getMinutes()).padStart(2, '0');
+
+                return `${g1}.${a1}.${y1} günü saat ${s1}:${dk1} sıralarında`;
+            }
+        }
+
+        return manuel || ".....";
+    }
+
     function createReport() {
         let seciliTur = document.getElementById('olay_turu').value;
         if(seciliTur.includes("Diğer")) seciliTur = document.getElementById('manuel_konu').value || "GENEL KONU";
@@ -662,7 +716,9 @@
         const adres = document.getElementById('adres').value || ".....";
         const b_t = formatD(document.getElementById('Olayın_Bildirildiği_Tarih/Saat').value);
         const i_t = formatD(document.getElementById('Olay_Yerine_İntikal_Tarih/Saat').value);
-        const o_t = document.getElementById('Olayın_Gerçekleştiği_Tarih').value || ".....";
+        
+        // Sihirli zaman okuma
+        const o_t = formatSihirliTarih();
 
         let teknik = "";
         
